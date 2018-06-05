@@ -1,6 +1,7 @@
 ----------------------------------------------------------------------------------------------------------------------------------
 
 Lab1.1
+
 sudo ls 查看执行权限
 如果 sudo ls不可用需要执行以下操作，例如用户为student
     su
@@ -16,6 +17,7 @@ sudo ls 查看执行权限
 ----------------------------------------------------------------------------------------------------------------------------------
 
 Lab2.1
+
 https://kubernetes.io/
 右上角可以切换版本
 
@@ -24,6 +26,75 @@ https://github.com/kubernetes/kubernetes/
 ----------------------------------------------------------------------------------------------------------------------------------
 
 Lab3.1
+
+课程Yaml文件下载
+wget https://training.linuxfoundation.org/cm/LFS258/LFS258_V2018-02-15_SOLUTIONS.tar.bz2 --user=LFtraining --password=Penguin2014
+tar -xvf ./LFS258_V2018-02-15_SOLUTIONS.tar.bz2
+
+使用秘钥登录系统
+$ ssh -i LFS458.pem student@35.226.100.87
+
+安装Docker
+$ sudo -i
+# apt-get update && apt-get upgrade -y
+# apt-cache madison docker.io   //查看可用的Docker版本
+# apt-get install -y docker.io
+
+<国内配置科学上网>
+# mkdir -p /etc/systemd/system/docker.service.d
+# cat /etc/systemd/system/docker.service.d/http-proxy.conf
+[Service]
+Environment="HTTP_PROXY=http://192.168.100.97:8123"
+# cat /etc/systemd/system/docker.service.d/https-proxy.conf
+[Service]
+Environment="HTTPS_PROXY=https://192.168.100.97:8123"
+# systemctl daemon-reload
+# systemctl restart docker
+# docker info
+# systemctl show --property=Environment docker
+
+<关SWAP，不知道现在用不用关，需要再测试一下>
+# swapoff  -a
+# vim /etc/fstab  (add #)
+
+添加Kubernetes源并安装
+# vim /etc/apt/sources.list.d/kubernetes.list
+deb http://apt.kubernetes.io/ kubernetes-xenial main
+# https_proxy=https://192.168.100.97:8123 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+# https_proxy=https://192.168.100.97:8123 apt-get update
+# apt-cache madison kubeadm
+# https_proxy=https://192.168.100.97:8123 apt-get install kubeadm=1.9.6-00 kubelet=1.9.6-00
+
+# kubeadm init --pod-network-cidr 10.244.0.0/16  --apiserver-advertise-address 192.168.100.65
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Your Kubernetes master has initialized successfully!
+To start using your cluster, you need to run the following as a regular user:
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+You should now deploy a pod network to the cluster.
+Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
+https://kubernetes.io/docs/concepts/cluster-administration/addons/
+You can now join any number of machines by running the following on each node
+as root:
+  kubeadm join --token 50b8ee.cd69db91cbdf3177 192.168.100.65:6443 --discovery-token-ca-cert-hash sha256:b84b4143609d968215d5cb61c69b2b417a407d30c53b70f975dc787b24c56879
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
+
+# exit
+$ mkdir -p $HOME/.kube
+$ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+$ sudo chown $(id -u):$(id -g) $HOME/.kube/config
+$ sudo cp /root/kube-flannel.yml ./
+$ kubectl apply -f kube-flannel.yml
+$ ip addr 
+$ kubectl get nodes
+$ kubectl get pods --all-namespaces
+$ kubectl describe nodes yqb-k8s-node1 | grep Taints
+$ kubectl taint nodes --all  node-role.kubernetes.io/master-
+$ kubectl describe nodes yqb-k8s-node1 | grep Taints
+
+$ source <(kubectl completion bash)
+$ echo "source <(kubectl completion bash)" >> .bashrc
 
 ----------------------------------------------------------------------------------------------------------------------------------
 
