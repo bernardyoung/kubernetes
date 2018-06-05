@@ -65,7 +65,7 @@ deb http://apt.kubernetes.io/ kubernetes-xenial main
 # apt-cache madison kubeadm
 # https_proxy=https://192.168.100.97:8123 apt-get install kubeadm=1.9.6-00 kubelet=1.9.6-00 //官方手册是1.9.1-00
 
-# kubeadm init --pod-network-cidr 10.244.0.0/16  --apiserver-advertise-address 192.168.100.65
+# kubeadm init --pod-network-cidr 10.244.0.0/16  --apiserver-advertise-address 192.168.100.65 //cidr是Flannel中的地址段
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Your Kubernetes master has initialized successfully!
 To start using your cluster, you need to run the following as a regular user:
@@ -97,12 +97,14 @@ $ sudo cp /root/kube-flannel.yml ./
 $ kubectl apply -f kube-flannel.yml
 $ ip addr 
 
+去除master节点的Taints的NoSchedule,使master节点可以部署pod
 $ kubectl get nodes
 $ kubectl get pods --all-namespaces
 $ kubectl describe nodes yqb-k8s-node1 | grep Taints
 $ kubectl taint nodes --all  node-role.kubernetes.io/master-
 $ kubectl describe nodes yqb-k8s-node1 | grep Taints
 
+Kube命令自动补齐
 $ source <(kubectl completion bash)
 $ echo "source <(kubectl completion bash)" >> .bashrc
 
