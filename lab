@@ -63,7 +63,7 @@ deb http://apt.kubernetes.io/ kubernetes-xenial main
 # https_proxy=https://192.168.100.97:8123 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 # https_proxy=https://192.168.100.97:8123 apt-get update
 # apt-cache madison kubeadm
-# https_proxy=https://192.168.100.97:8123 apt-get install kubeadm=1.9.6-00 kubelet=1.9.6-00
+# https_proxy=https://192.168.100.97:8123 apt-get install kubeadm=1.9.6-00 kubelet=1.9.6-00 //官方手册是1.9.1-00
 
 # kubeadm init --pod-network-cidr 10.244.0.0/16  --apiserver-advertise-address 192.168.100.65
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -79,14 +79,24 @@ You can now join any number of machines by running the following on each node
 as root:
   kubeadm join --token 50b8ee.cd69db91cbdf3177 192.168.100.65:6443 --discovery-token-ca-cert-hash sha256:b84b4143609d968215d5cb61c69b2b417a407d30c53b70f975dc787b24c56879
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-
+根据上面的地址 https://kubernetes.io/docs/concepts/cluster-administration/addons/ 打开后选择要配置的网络
+本实验使用的网络是Flannel，打开上面的地址后找Flannel，跳到GitHub地址
+https://github.com/coreos/flannel/blob/master/Documentation/kubernetes.md
+向上翻一级到 Documentation 目录，找到kube-flannel.yml文件并打开，然后点Raw按钮可得到以下地址
+https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+wget https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 # exit
+
+普通用户授权使用Kubectl命令
 $ mkdir -p $HOME/.kube
 $ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 $ sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+安装Flannel网络
 $ sudo cp /root/kube-flannel.yml ./
 $ kubectl apply -f kube-flannel.yml
 $ ip addr 
+
 $ kubectl get nodes
 $ kubectl get pods --all-namespaces
 $ kubectl describe nodes yqb-k8s-node1 | grep Taints
