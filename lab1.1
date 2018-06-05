@@ -1,0 +1,11 @@
+sudo ls 查看执行权限
+如果 sudo ls不可用需要执行以下操作，例如用户为student
+    su
+    cd /etc/sudoers.d
+    cat /etc/sudoers.d/student
+-----------------------------------
+    student ALL=(ALL) ALL
+-----------------------------------
+    chmod 440 /etc/sudoers.d/student
+
+建议在.bashrc中添加PATH=$PATH:/usr/sbin:/sbin
