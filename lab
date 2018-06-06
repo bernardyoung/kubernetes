@@ -136,6 +136,35 @@ e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     
 将主机加入到集群，使用已有token或新创建的token,并把上面的加密内容放到sha256:后面
 $ kubeadm join --token 50b8ee.cd69db91cbdf3177 192.168.100.65:6443 --discovery-token-ca-cert-hash sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+
+$ kubectl get nodes
+$ kubectl get namespace
+$ kubectl get pod --all-namespaces
+$ ip addr //两个节点查看flannel.1的网络分别是10.244.0.0/32和10.244.1.0/32
+
+部署应用测试
+$ kubectl run nginx --image nginx
+$ kubectl get deployments
+$ kubectl describe deployment nginx
+$ kubectl get events //查看集群获取和部署新应用程序所需的基本步骤
+$ kubectl get deployment ng -o yaml
+$ kubectl get deployment ng -o yaml > first.yaml
+$ vim first.yaml //编辑并删除 creationTimestamp、resourceVersion、selfLink、uid和status下的十几行
+$ kubectl create -f first.yaml
+$ kubectl get deployment nginx -o yaml > second.yaml
+$ diff first.yaml second.yaml
+$ kubectl expose deployment/nginx //因为yaml文件中没有为Pod指定端口，所以暴露服务会报错
+$ vim first.yaml //在容器的name下增加这三行
+          ports:
+          - containerPort: 80
+            protocol: TCP
+$ kubectl delete deployment nginx
+$ kubectl apply -f first.yaml
+$ kubectl expose deployment nginx
+$ kubectl get service nginx
+$ kubectl get endpoints nginx
+$ kubectl describe pod nginx-7587c6fdb6-jlg5h  | grep Node //查看容器所在主机
+$
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
