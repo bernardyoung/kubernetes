@@ -142,7 +142,7 @@ $ kubectl get namespace
 $ kubectl get pod --all-namespaces
 $ ip addr //两个节点查看flannel.1的网络分别是10.244.0.0/32和10.244.1.0/32
 
-部署应用测试
+部署应用测试及网络连通性
 $ kubectl run nginx --image nginx
 $ kubectl get deployments
 $ kubectl describe deployment nginx
@@ -164,8 +164,25 @@ $ kubectl expose deployment nginx
 $ kubectl get service nginx
 $ kubectl get endpoints nginx
 $ kubectl describe pod nginx-7587c6fdb6-jlg5h  | grep Node //查看容器所在主机
-$
+# sudo tcpdump -i flannel.1  //在Pod所在机器抓包，包括flannel.1、cni0和veth网卡
+$ curl 10.99.157.33:80 //使用群集IP访问
+$ curl 10.244.1.187:80 //使用endpoint地址访问
+
+$ kubectl get deployment nginx
+$ kubectl scale deployment nginx --replicas=3 //扩展为3个pod
+$ kubectl get deployment nginx
+$ kubectl get endpoints nginx
+$ kubectl get pod -o wide
+$ kubectl delete pod nginx-7587c6fdb6-jlg5h //删除一个pod
+$ kubectl get pod //发现自动重建pod,维持为三副本
+$ kubectl get endpoints //发现endpoint自动更新的新的Pod地址
+$ echo 111111111111111111111111 >> /usr/share/nginx/html/index.html //分别进入三个容器，往index.html文件下面分别加111、222、333
+$ curl 10.99.157.33:80 //执行多次可以看到自动负载均衡
+
 ----------------------------------------------------------------------------------------------------------------------------------
+
+Lab3.3
+
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
