@@ -178,3 +178,40 @@ $
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
+
+###排错###
+
+环境描述：
+node1 双网卡
+node2 单网卡
+
+问题描述：
+跨节点无法访问Cluster IP
+node1 和 node2 之间的10.244.0.0段的地址无法通信
+
+解决过程：
+kubectl -n kube-system logs -f kube-flannel-ds-9n9ww kube-flannel   //查看flannel日志
+
+1 main.go:475] Determining IP address of default interface
+1 main.go:488] Using interface with name ens3 and address 192.168.200.227
+1 main.go:505] Defaulting external address to interface address (192.168.200.227)
+1 kube.go:131] Waiting 10m0s for node controller to sync
+1 kube.go:294] Starting kube subnet manager
+1 kube.go:138] Node controller sync successful
+1 main.go:235] Created subnet manager: Kubernetes Subnet Manager - yqb-k8s-node1
+1 main.go:238] Installing signal handlers
+1 main.go:353] Found network config - Backend type: vxlan
+
+发现选择了ens3为flannel的网卡，应该使用ens4
+kubectl delete -f kube-flannel.yml
+reboot
+vim kube-flannel.yml
+        - /opt/bin/flanneld
+        - --iface-regex=192.168.100.*    //增加这一行
+        - --iface=ens3    //如果每台机器的网卡名都一样，可以使用这一行
+kubectl apply -f  kube-flannel.yml
+
+参考：
+https://github.com/coreos/flannel/issues/981
+https://github.com/coreos/flannel/issues/967
+
