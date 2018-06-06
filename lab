@@ -108,7 +108,8 @@ $ kubectl describe nodes yqb-k8s-node1 | grep Taints
 Kube命令自动补齐
 $ source <(kubectl completion bash)
 $ echo "source <(kubectl completion bash)" >> .bashrc
-
+$ source <(kubeadm completion bash)
+$ echo "source <(kubeadm completion bash)" >> .bashrc
 ----------------------------------------------------------------------------------------------------------------------------------
 
 Lab3.2
@@ -119,7 +120,14 @@ Lab3.2
     3、关SWAP
     4、添加Kubernetes源并安装
     
+生成令牌，令牌默认保存24h
+$ sudo kubeadm token list
 
+$ openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | open rsa -pubin -outfrom der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+e09541eda66a35dac7d6c9e38697146df1b25b3cb0b092b1041b2c7b857094aa
+
+使用kubernetes安装完生成的join串，并把上面的加密内容放到sha256:后面，将节点加入集群
+$ kubeadm join --token 50b8ee.cd69db91cbdf3177 192.168.100.65:6443 --discovery-token-ca-cert-hash sha256:e09541eda66a35dac7d6c9e38697146df1b25b3cb0b092b1041b2c7b857094aa
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
