@@ -53,7 +53,7 @@ Environment="HTTPS_PROXY=https://192.168.100.97:8123"
 # docker info
 # systemctl show --property=Environment docker
 
-<关SWAP，不知道现在用不用关，需要再测试一下>
+关SWAP
 # swapoff  -a
 # vim /etc/fstab  (add #)
 
@@ -65,6 +65,7 @@ deb http://apt.kubernetes.io/ kubernetes-xenial main
 # apt-cache madison kubeadm
 # https_proxy=https://192.168.100.97:8123 apt-get install kubeadm=1.9.6-00 kubelet=1.9.6-00 //官方手册是1.9.1-00
 
+kubernetes初使化
 # kubeadm init --pod-network-cidr 10.244.0.0/16  --apiserver-advertise-address 192.168.100.65 //cidr是Flannel中的地址段
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Your Kubernetes master has initialized successfully!
@@ -110,7 +111,14 @@ $ echo "source <(kubectl completion bash)" >> .bashrc
 
 ----------------------------------------------------------------------------------------------------------------------------------
 
-Lab4.1
+Lab3.2
+
+安装WorkNode与Lab3.1中的部分内容一样
+    1、安装Docker
+    2、<国内配置科学上网>
+    3、关SWAP
+    4、添加Kubernetes源并安装
+    
 
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
