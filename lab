@@ -122,12 +122,20 @@ Lab3.2
     
 生成令牌，令牌默认保存24h
 $ sudo kubeadm token list
+如果没有令牌使用命令创建
+$ sudo kubeadm token create
+    --ttl 0 //创建永不过期的token
 
-$ openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | open rsa -pubin -outfrom der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
-e09541eda66a35dac7d6c9e38697146df1b25b3cb0b092b1041b2c7b857094aa
+证书-->生成公钥-->签名
+$ openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outfrom der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 
-使用kubernetes安装完生成的join串，并把上面的加密内容放到sha256:后面，将节点加入集群
-$ kubeadm join --token 50b8ee.cd69db91cbdf3177 192.168.100.65:6443 --discovery-token-ca-cert-hash sha256:e09541eda66a35dac7d6c9e38697146df1b25b3cb0b092b1041b2c7b857094aa
+    openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt //-pubkey使用证书文件生成公钥
+    open rsa -pubin -outfrom der 2>/dev/null //-pubin输出公钥，-outfroml输出格式，标准错误到null
+    openssl dgst -sha256 -hex | sed 's/^.* //' //使用sha256生成和验证数字签名
+    
+将主机加入到集群，使用已有token或新创建的token,并把上面的加密内容放到sha256:后面
+$ kubeadm join --token 50b8ee.cd69db91cbdf3177 192.168.100.65:6443 --discovery-token-ca-cert-hash sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
