@@ -289,7 +289,9 @@ $ kubectl create namespace sock-shop
 $ kubectl apply -f complete-demo.yaml -n sock-shop
 $ kubectl get service -n sock-shop    //查看NodePort并访问网站地址http://42.62.51.27:30001/
 
-测试删除Pod后，Pod会自动重建
+测试删除Pod后，Pod会自动重建,删除Deployment和Service后不会自动重建
+
+$ kubectl delete -f complete-demo.yaml
 
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
