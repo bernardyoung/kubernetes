@@ -182,6 +182,7 @@ $ curl 10.99.157.33:80 //执行多次可以看到自动负载均衡
 ----------------------------------------------------------------------------------------------------------------------------------
 
 Lab3.3 从集群外部访问
+
 $ kubectl get pod
 $ kubectl exec nginx-7587c6fdb6-bxj9s -- printenv | grep KUBERNETES //打印容器中的环境变量
 $ kubectl get service
@@ -196,6 +197,43 @@ $ kubectl delete service nginx
 ----------------------------------------------------------------------------------------------------------------------------------
 
 Lab4.1 CPU和内存限制
+
+$ kubectl run hog --image=vish/stress    //virsh/stress是压力容器
+$ kubectl get deployment
+$ kubectl describe deployment hog
+$ kubectl get deployment hog -o yaml    //没有设置资源限制，resources: {}里是空的
+
+$ kubectl get deployment hog -o yaml > hog.yaml
+$ vim hog.yaml //删除状态等内容
+        resources:   //删除{}添加下面四行
+          limits:
+            memory: "4Gi"
+          requests:
+            memory: "256Mi"
+$ kubectl replace -f hog.yaml    //再次发布
+$ kubectl get deployment hog -o yaml
+$ kubectl run hog --image=vish/stress --limits='memory=4Gi' --requests='memory=2500Mi' //也可以用这个命令直接做资源限制
+$ kubectl logs hog-ddcc66b88-wfm2q    //查看容器资源限制为0
+
+$ vim hog.yaml //修改配置文件
+        resources:
+          limits:
+            cpu: 1
+            memory: 4Gi
+          requests:
+            cpu: 0.5
+            memory: 500Mi
+        args:    //给容器增加压力测试参数，每次分配100Mi间隔1s总计950M
+        - -cpus
+        - "2"
+        - -mem-total
+        - "950Mi"
+        - -mem-alloc-size
+        - "100Mi"
+        - -mem-alloc-sleep
+        - "1s"
+$ kubectl replace -f hog.yaml    //再次发布
+$ kubectl logs hog-67594d8556-48w65    //查看资源消耗950M内存和2个CPU线程
 
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
