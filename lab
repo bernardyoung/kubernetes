@@ -276,6 +276,21 @@ $ kubectl apply -f hog2.yaml
 查看top 
 
 ----------------------------------------------------------------------------------------------------------------------------------
+
+Lab 4.3 更复杂的部署
+
+一个网站的微服务部署Demo，github地址是
+https://raw.githubusercontent.com/microservices-demo/microservices-demo/master/deploy/kubernetes/complete-demo.yaml
+
+$ http_proxy=http://192.168.100.97:8123/ wget https://tinyurl.com/y8bn2awp -O complete-demo.yaml
+$ cat complete-demo.yaml | grep image    //查看所需要的镜像
+$ vim complete-demo.yaml    //详细查看文件，并找到namespace
+$ kubectl create namespace sock-shop
+$ kubectl apply -f complete-demo.yaml -n sock-shop
+$ kubectl get service -n sock-shop    //查看NodePort并访问网站地址http://42.62.51.27:30001/
+
+测试删除Pod后，Pod会自动重建
+
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
@@ -312,6 +327,9 @@ LoadBalancer：
 
 ExternalName：
     
+
+删除namespace后，namespace下的所有资源将被删除
+
 
 ----------------------------------------------------------------------------------------------------------------------------------
 
