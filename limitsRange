@@ -1,0 +1,82 @@
+例子
+
+kubectl delete -f lykops-limitrangerange.yaml
+cat << EOF > lykops-limitrangerange.yaml
+apiVersion: v1
+kind: LimitRange
+metadata:
+  namespace: default
+  name: lykops-limitrange
+  labels:
+    project: lykops
+    app: limitrange
+    version: v1
+spec:
+  limits:
+  - max:
+      cpu: 1
+      memory: 1Gi
+    min:
+      cpu: 0.05
+      memory: 64Mi
+    type: Pod
+    #注意pod只能这么多参数
+  - default:
+      cpu: 0.2
+      memory: 200Mi
+    defaultRequest:
+      cpu: 0.01
+      memory: 16Mi
+    max:
+      cpu: 0.25
+      memory: 256Mi
+    min:
+      cpu: 0.005
+      memory: 8Mi
+    #container只能这么多参数
+    type: Container
+EOF
+kubectl create -f lykops-limitrangerange.yaml
+
+参数说明
+每容器（type： container）
+
+min：资源紧张时，最低保证可以使用的资源是： CPU 0.005个核，内存8M 
+max：资源空闲时，最大可以使用的资源是：CPU 0.25个核，内存256M
+default：默认时，限制使用的资源是：CPU 0.2个核，内存200M
+defaultRequest：默认时，最低保证可以使用的资源是： CPU 0.01个核，内存16M
+
+每pod（type： pod）
+
+min：最低保证可以使用的资源是： CPU 0.05个核，内存64M 
+max最大可以使用的资源是：CPU 1个核，内存1G
+
+使用规则
+
+1、每个namespace应该只有一个limits；
+
+2、limits值设置：
+
+每容器（type： container）
+    max>=default>=defaultRequest>min
+每pod（type： pod）
+    max>=min
+整个
+    容器的max*容器数<=pod的max
+    容器的min*容器数<=pod的min
+
+3、创建资源时，pod自定义资源限制的规则：
+
+自定义的单个request>=limits的容器的defaultrequets
+自定义的request的总和>=limits的pod的min
+自定义的单个limit<=limits的容器的requets
+自定义的limit的总和<=limits的pod的max
+
+使用心得
+
+为了防止出现创建资源失败的情况，个人建议：
+
+1、只使用limits的pod或者container中的一种，尽量不使用同时使用，特别在pod中有多容器需求的情况下。
+2、尽量使用max，尽量不同时使用max和min
+3、由于limits会针对该namespace下的所有新建的pods，所以在该namespace下应该运行哪些资源需求相同的业务
+4、在复杂的limits配置下，不要在创建资源时使用自定义配置。
