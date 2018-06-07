@@ -242,7 +242,38 @@ $ kubectl logs hog-67594d8556-48w65    //查看资源消耗950M内存和2个CPU�
 
 Lab 4.2 NameSpace资源限制
 
+$ kubectl create namespace low-usage-limit
+$ kubectl get namespace
+$ vim low-resource-range.yaml
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: low-resource-range
+spec:
+  limits:
+  - default:
+      cpu: 1
+      memory: 1000Mi
+    defaultRequest:
+      cpu: 0.2
+      memory: 100Mi
+    type: Container
+$ kubectl apply -f low-resource-range.yaml --namespace=low-usage-limit
+$ kubectl get LimitRange --all-namespaces
+$ kubectl run limited-hog --image=vish/stress -n low-usage-limit
+$ kubectl get deployment --all-namespaces
+$ kubectl get pod -n low-usage-limit
+$ kubectl -n low-usage-limit get pod limited-hog-5bcbbc876b-hjfrw -o yaml    //查看Pod详情，容器资源限制将从Namespace继承
 
+在LimitRange中，容器默认使用0.2C和100M内存，最多限制为1C和1000M内存，当容为20个的时候，有14个Running，6个Pending
+此时14个容器占用总CPU和内存数达到了namespace中LimitRange的上限1C、1000M
+修改了low-resource-range.yaml配置文件后，重新replace配置后，对已经存存的容器无限效，通过scale调度新增加的容器使用新的LimitRange
+
+$ cp hog.yaml hog2.yaml
+$ vim hog2.yaml
+    namespace: low-usage-limit    //改默认namespace
+$ kubectl apply -f hog2.yaml
+查看top 
 
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
