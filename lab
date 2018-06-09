@@ -294,7 +294,50 @@ $ kubectl get service -n sock-shop    //查看NodePort并访问网站地址http:
 $ kubectl delete -f complete-demo.yaml
 
 ----------------------------------------------------------------------------------------------------------------------------------
+
+Lab 5.1 配置TLS访问
+
+API请求必须以JSON形式传递信息。
+在为您做API请求时，kubectl将.yaml转换为JSON。
+API请求有很多设置，但必须包括apiVersion、kind和元数据，以及spec设置，以声明要部署的容器类型。
+spec字段取决于正在创建的对象。
+
+访问API
+$ cat .kube/config | grep client-cert | awk '{print $2}' | base64 -d > client.pem
+$ cat .kube/config | grep client-key | awk '{print $2}' | base64 -d > client-key.pem
+$ cat .kube/config | grep  auth | awk '{print $2}' | base64 -d  > ca.pem
+$ cat .kube/config | grep server
+如何获取所有的API？
+$ curl --cert client.pem --key client-key.pem --cacert ca.pem https://192.168.100.65:6443/api/v1/pods
+
+使用json文件通过调用API创建pod
+$ vim curlpod.json
+{
+  "kind": "Pod",
+  "apiVersion": "v1",
+  "metadata":{
+    "name": "curlpod",
+    "namespace": "default",
+    "labels": {
+      "name": "examplepod"
+    }
+  },
+  "spec": {
+    "containers": [{
+      "name": "nginx",
+      "image": "nginx",
+      "ports": [{"containerPort": 80}]
+    }]
+  }
+}
+
+$ curl --cert client.pem --key client-key.pem --cacert ca.pem https://192.168.100.65:6443/api/v1/namespaces/default/pods -XPOST -H 'Content-Type: application/json' -d@curlpod.json
+$ kubectl get pod
+
 ----------------------------------------------------------------------------------------------------------------------------------
+
+
+
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
