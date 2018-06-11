@@ -307,7 +307,7 @@ $ cat .kube/config | grep client-cert | awk '{print $2}' | base64 -d > client.pe
 $ cat .kube/config | grep client-key | awk '{print $2}' | base64 -d > client-key.pem
 $ cat .kube/config | grep  auth | awk '{print $2}' | base64 -d  > ca.pem
 $ cat .kube/config | grep server
-如何获取所有的API？
+
 $ curl --cert client.pem --key client-key.pem --cacert ca.pem https://192.168.100.65:6443/api/v1/pods
 
 使用json文件通过调用API创建pod
@@ -344,6 +344,8 @@ $ strace kubectl get endpoints    //跟踪调试运行
 查看所有的API
 cd .kube/cache/discovery/192.168.100.65_6443/
 find . | grep json
+
+$ kubectl api-versions
 
 $ python -m json.tool v1/serverresources.json    //以json格式查看API内容
 $ python -m json.tool v1/serverresources.json | grep kind
