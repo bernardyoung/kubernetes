@@ -354,7 +354,29 @@ $ python -m json.tool ./autoscaling/v1/serverresources.json | grep kind
 
 ----------------------------------------------------------------------------------------------------------------------------------
 
+Lab 6.1 RESTful API 访问（有状态集API访问）
 
+我们将使用curl命令以不安全的方式向集群发出API请求。
+一旦我们知道了IP地址和端口，我们就可以用RESTful方式检索集群数据。
+默认情况下，大多数信息是受限的，但对身份验证策略的更改可能允许更多访问。
+
+$ kubectl config view
+
+接下来，我们需要找到不记名令牌。
+这是默认令牌的一部分。
+查看令牌列表，首先在群集上，然后是默认名称空间中的令牌。
+集群中的每个controllers都有一个seceret
+
+$ kubectl get secret --all-namespaces
+$ kubectl get secret 
+$ kubectl describe secret default-token-vx5kg
+$ kubectl describe secret default-token-vx5kg | grep token: | awk '{print $2}'
+$ export token=$(kubectl describe secret default-token-vx5kg | grep token: | awk '{print $2}')
+
+$ curl https://192.168.100.65:6443/apis --header "Authorzation : Bearer $token" -k
+$ curl https://192.168.100.65:6443/api/v1 --header "Authorzation : Bearer $token" -k
+$ kubectl run -i -t busybox --image=busybox --restart=Never
+# ls /var/run/secrets/kubernetes.io/serviceaccount/
 
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
