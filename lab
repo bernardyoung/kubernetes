@@ -389,7 +389,44 @@ $ curl http://127.0.0.1:8001/api/v1/namespaces     //不报错
 
 ----------------------------------------------------------------------------------------------------------------------------------
 
+Lab 6.3 使用 CronJob
 
+每分钟创建一个容器，输出date后sleep 30s，然后关闭
+$ vim cron-job.yaml
+
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: date
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: dateperminute
+            image: busybox
+            args:
+            - /bin/sh
+            - -c
+            - date; sleep 30
+          restartPolicy: OnFailure
+
+$ kubectl create -f cron-job.yaml
+$ kubectl get cronjob
+$ kubectl get job
+$ kubectl get pod
+$ kubectl get job --watch
+$ kubectl get pod | grep date
+
+查看容器日志，每个容器创建时间相差1分钟
+$ kubectl logs date-1529483160-s86f9
+$ kubectl logs date-1529483220-rtwhs
+$ kubectl logs date-1529483280-9674n
+$ kubectl logs date-1529483340-l8jz2
+
+$ kubectl delete cronjob date
 
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
