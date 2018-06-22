@@ -429,8 +429,121 @@ $ kubectl logs date-1529483340-l8jz2
 $ kubectl delete cronjob date
 
 ----------------------------------------------------------------------------------------------------------------------------------
+
+Lab 7.1 使用 ReplicaSets （副本集）
+
+$ kubectl get replicaset
+$ vim rs.yaml
+
+apiVersion: extensions/v1beta1
+kind: ReplicaSet
+metadata:
+  name: rs-one
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        system: ReplicaOne
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80
+
+$ kubectl create -f rs.yaml
+$ kubectl describe replicaset rs-one
+$ kubectl get pod
+$ kubectl delete replicaset rs-one --cascade=false    //删除Replicaset不串联po
+$ kubectl get replicaset
+$ kubectl get pod
+
+$ kubectl create -f rs.yaml    //再次创建rs，rs会根据selector自动关联pod
+$ kubectl get replicaset
+$ kubectl get pods
+
+$ kubectl edit pod rs-one-smjdj    //修改Pod的Lable，ReplicaOne改成IsolatedPod
+$ kubectl get replicaset    //复本数应该还是2
+$ kubectl  get pod -L system    //3个pod
+$ kubectl delete replicaset rs-one    //rs和2个pod将被删除
+$ kubectl delete pod -l system=IsolatedPod    //通过lable删除剩下的pod
+
+可以删除复本集而不删除pod
+创建复本集后可自动关联pod
+修改pod标签后复本集自动创建新的pod的以维护副本数量
+可通过标签删除pod
+
 ----------------------------------------------------------------------------------------------------------------------------------
+
+Lab 7.2 使用 DaemonSets （守护程序集）
+
+vim ds.yaml
+
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: ds-one
+spec:
+  template:
+    metadata:
+      labels:
+        system: DaemonSetOne
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80
+
+$ kubectl create -f ds.yaml
+$ kubectl get daemonset
+$ kubectl describe daemonset ds-one
+$ kubectl get pod -o wide
+$ kubectl get pod -o wide
+$ kubectl describe pod ds-one-7s5xh | grep 
+
+与ReplicaSets相比，只是Yaml文件修改了一下Kind和Labels，删除了 replicas: 2
+
 ----------------------------------------------------------------------------------------------------------------------------------
+
+Lab 7.3 滚动更新和回滚
+
+$ kubectl get daemonset ds-one -o yaml    //查看默认更新策略为OnDelete
+$ kubectl set image daemonset ds-one nginx=nginx:1.8.1-alpine    //使用set更新镜像
+$ kubectl describe pod ds-one-7s5xh | grep Image:    //查看原来的Pod image版本没有变
+$ kubectl delete pod ds-one-7s5xh
+$ kubectl get pod
+$ kubectl describe pod ds-one-qmsvb | grep Image:    //新增pod image版本更新了
+$ kubectl rollout history daemonset ds-one    //查看更新历史列表
+$ kubectl rollout history daemonset ds-one --revision=1    //对比两个历史版本的区别
+$ kubectl rollout history daemonset ds-one --revision=2
+
+$ kubectl rollout undo daemonset ds-one --to-revision=1 //回滚到版本1
+$ kubectl describe pod ds-one-qmsvb | grep Image:
+$ kubectl delete pod ds-one-qmsvb
+$ kubectl describe pod ds-one-x9mtg  | grep Image:    //回到了原来的版本
+
+滚动更新使用set，回滚使用 rollout undo
+当updateStrategy为OnDelete时，先删除原有的Pod后，新Pod才会更新
+
+$ kubectl get daemonset ds-one -o yaml    //查看默认更新策略为OnDelete
+$ kubectl get daemonset ds-one -o yaml > ds2.yaml
+$ vim ds2.yaml    //删除该删的时间和状态，修改OnDelete为RollingUpdate,修改名字为ds-two
+$ kubectl create -f ds2.yaml    //重新创建ds-two
+$ kubectl get pod
+$ kubectl describe pod ds-two-gtv48  | grep Image:
+$ kubectl edit daemonset ds-two    //使用edit更新image为nginx:1.8.1-alpine
+$ kubectl get daemonset ds-two
+$ kubectl get pod
+$ kubectl describe pod ds-two-q7jlp | grep Image:
+$ kubectl rollout status daemonset ds-two    //查看循环更新状态
+$ kubectl rollout history daemonset ds-two
+$ kubectl rollout history daemonset ds-two --revision=2
+$ kubectl delete daemonset ds-two
+
+当updateStrategy为RollingUpdate时，Pod会自动循环更新（删一个建一个）
+
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
