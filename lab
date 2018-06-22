@@ -545,8 +545,89 @@ $ kubectl delete daemonset ds-two
 当updateStrategy为RollingUpdate时，Pod会自动循环更新（删一个建一个）
 
 ----------------------------------------------------------------------------------------------------------------------------------
+
+Lab 8.1 Service
+
+服务（也称为微服务）是声明访问Pod的逻辑集合的策略的对象。
+
+$ vim nginx-one.yaml
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nginx-one
+  labels:
+    system: secondOne
+  namespace: accounting
+spec:
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx:1.7.9
+        imagePullPolicy: Always
+        name: nginx
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+      nodeSelector:
+        system: secondOne
+
+$ kubectl get node --show-labels
+$ kubectl create namespace accounting
+$ kubectl -n accounting get deployment
+$ kubectl -n accounting get pod    //状态是Pending
+$ kubectl -n accounting describe pod    //看到报错，没有可用节点
+
+$ kubectl label node yqb-k8s-node2 system=secondOne    //为节点添加Lable后，容器启动成功
+$ kubectl get nodes --show-labels
+$ kubectl get pods -n accounting
+
+$ kubectl -n accounting get pod --show-labels    //查看容器的Lable
+$ kubectl get pod --all-namespaces -l app=nginx    //通过Lable筛选容器
+
+$ kubectl get service -n accounting
+$ kubectl -n accounting expose deployment nginx-one    //服务暴露
+$ kubectl get service -n accounting
+$ kubectl get endpoints -n accounting
+
+虽然暴露的是8080端口，但是应用未侦听此端口，所以访问endpoints的8080端口失败，访问80端口成功
+
+$ kubectl delete deployment nginx-one -n accounting    //删除Deployment后，Service和Endpoints并不会被删除
+$ vim nginx-one.yaml    //8080改成80
+$ kubectl create -f nginx-one.yaml    //重新部署
+kubectl -n accounting delete service nginx-one    //删除Service
+kubectl -n accounting expose deployment nginx-one    //服务暴露，默认为ClusterIP
+kubectl get endpoints -n accounting
+kubectl get service -n accounting
+
+kubectl -n accounting delete service nginx-one    //删除服务暴露，为后面的实验做准备
+
 ----------------------------------------------------------------------------------------------------------------------------------
+
+Lab 8.2 NodePort
+
+$ kubectl expose deployment -n accounting nginx-one --type=NodePort --name=service-lab    //接上一章的Deployment，暴露服务为NodePort，启名为service-lab
+$ kubectl get service -n accounting
+$ kubectl describe service -n accounting    //查看自动生成的端口30567
+
+$ curl 192.168.100.65:30567
+http://42.62.51.27:30567/    //使用外部网络，访问这个地址也可以访问到
+
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Lab 8.3 使用Lables管理资源
+
+$ kubectl delete pod -n accounting -l app=nginx    //通过lable删除pod
+$ kubectl get pod -n accounting    //deployment自动部署新的pod
+$ kubectl get deployment -n accounting --show-labels    //查看deployment的lable
+$ kubectl delete deployment -n accounting -l system=secondOne    //通过lable删除deployment
+
+$ kubectl get node --show-labels
+$ kubectl label node yqb-k8s-node2 system-    //从节点上删除lable
+
 ----------------------------------------------------------------------------------------------------------------------------------
 --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
