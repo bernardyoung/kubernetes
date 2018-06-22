@@ -455,7 +455,7 @@ spec:
 $ kubectl create -f rs.yaml
 $ kubectl describe replicaset rs-one
 $ kubectl get pod
-$ kubectl delete replicaset rs-one --cascade=false    //删除Replicaset不串联po
+$ kubectl delete replicaset rs-one --cascade=false    //删除Replicaset不串联pod
 $ kubectl get replicaset
 $ kubectl get pod
 
