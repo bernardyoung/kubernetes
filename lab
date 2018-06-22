@@ -578,7 +578,7 @@ LoadBalancer：
     IaaS提供一个单独的 IP 地址，转发所有流量到你的服务
 
 ExternalName：
-    
+    使用CNAME记录,将服务映射到外部
 
 删除namespace后，namespace下的所有资源将被删除
 
