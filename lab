@@ -870,7 +870,7 @@ $ kubectl exec -ti nginx-nfs-7f7b7459b9-pvf9r -- /bin/bash -c 'df -Th'
 
 #PV是持久化卷，需要定义卷的来源，例如NFS服务器地址和目录
 #PVC是持久化卷申请的声明或叫做请求
-#在创建的PV和PVC时，在yaml文件中并未指明关系，PVC会自动使用PV的卷，PV会自动绑定到PVC
+#当只有一个PV和PVC时，在yaml文件中并未指明关系，PVC会自动使用PV的卷，PV会自动绑定到PVC
 #在9.2和9.3中，容器的卷名称是“nfs-vol”，容器使用使用PVC“pvc-one”，自动查到PV并使用
 #使用PVC可以为用户隐藏起来PV的IP、目录等配置参数，简化用户操作。
 
