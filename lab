@@ -741,6 +741,44 @@ $ kubectl delete configmap fast-car colors
 
 ----------------------------------------------------------------------------------------------------------------------------------
 
+Lab 9.2 创建 NFS 类型的 PV
+
+#安装并配置NFS
+$ sudo apt-get install nfs-kernel-server
+$ sudo mkdir /opt/sfw/
+$ sudo chmod 1777 /opt/sfw/
+$ sudo bash -c  'echo software > /opt/sfw/hello.txt'
+$ sudo vim /etc/exports
+/opt/sfw/ *(rw,sync,no_root_squash,subtree_check)
+$ sudo exportfs -ra    //重新加载配置文件
+$ sudo apt-get install nfs-common
+$ sudo showmount  -e
+
+node2:~$ sudo showmount -e 192.168.100.65
+node2:~$ sudo mount 192.168.100.65:/opt/sfw /mnt
+node2:~$ ls /mnt/
+node2:~$ cat /mnt/hello.txt
+
+#创建PV的yaml文件
+$ vim PVol.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pvvol-1
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    path: /opt/sfw
+    server: 192.168.100.65
+    readOnly: false
+    
+#使用yaml文件创建PV
+$ kubectl create -f PVol.yaml
+$ kubectl get pv
 
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
