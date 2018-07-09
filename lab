@@ -781,6 +781,99 @@ $ kubectl create -f PVol.yaml
 $ kubectl get pv
 
 ----------------------------------------------------------------------------------------------------------------------------------
+
+Lab 9.3 创建 PVC
+
+$ kubectl get pvc
+$ vim pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-one
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 200Mi
+
+$ kubectl create -f pvc.yaml
+$ kubectl get pvc
+
+#STATUS由Available变成了Bound    
+$ kubect get pv
+
+#创建POD并使用PVC挂载卷
+$ vim nfs-pod.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  generation: 1
+  labels:
+    run: nginx
+  name: nginx-nfs
+  resourceVersion: "1411"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      run: nginx
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        run: nginx
+    spec:
+      containers:
+      - image: nginx
+        imagePullPolicy: Always
+        name: nginx
+        volumeMounts:
+        - name: nfs-vol
+          mountPath: /opt
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      volumes: 
+      - name: nfs-vol
+        persistentVolumeClaim:
+          claimName: pvc-one
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+
+#主要是这四行
+      volumes: 
+      - name: nfs-vol   //卷名称
+        persistentVolumeClaim:
+          claimName: pvc-one    //调用的PVC
+
+$ kubectl create -f nfs-pod.yaml
+$ kubectl get pod
+#查看 Mounts: 和 Volumes: 部分
+$ kubectl describe pod nginx-nfs-7f7b7459b9-pvf9r
+$ kubectl exec -ti nginx-nfs-7f7b7459b9-pvf9r -- /bin/bash -c 'cat /opt/hello.txt'
+$ kubectl exec -ti nginx-nfs-7f7b7459b9-pvf9r -- /bin/bash -c 'df -Th'
+192.168.100.65:/opt/sfw        nfs4    41G  6.8G   32G  18% /opt
+
+#PV是持久化卷，需要定义卷的来源，例如NFS服务器地址和目录
+#PVC是持久化卷申请的声明或叫做请求
+#在创建的PV和PVC时，在yaml文件中并未指明关系，PVC会自动使用PV的卷，PV会自动绑定到PVC
+#在9.2和9.3中，容器的卷名称是“nfs-vol”，容器使用使用PVC“pvc-one”，自动查到PV并使用
+#使用PVC可以为用户隐藏起来PV的IP、目录等配置参数，简化用户操作。
+
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
