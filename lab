@@ -631,6 +631,130 @@ $ kubectl label node yqb-k8s-node2 system-    //从节点上删除lable
 
 ----------------------------------------------------------------------------------------------------------------------------------
 
+Lab 9.1 ConfigMap
+
+#ConfigMap可以使用的创建方式包括文本、文件、目标和Yaml文件中
+#可以单独调用configmap中的某一个key-value给容器，也可以将configmap中的所有key-value给容器
+
+#创建文本、文件和目录形式的key-value
+$ mkdir primary
+$ echo c > primary/cyan
+$ echo m > primary/magenta
+$ echo y > primary/yellow
+$ echo k > primary/black
+$ echo "known as key" >> primary/black
+$ echo blue > favorite
+
+#使用文本、文件和目录形式的key-value创建configmap
+$ kubectl create configmap colors --from-literal=text=black --from-file=./favorite --from-file=./primary/
+    --from-literal=text=black    //文本形式
+    --from-file=./favorite    //文件形式
+    --from-file=./primary/    //目录形式
+$ kubectl get configmap colors
+$ kubectl get configmap colors -o yaml
+
+#在创建Pod时使用configmap把参数传递到容器
+$ vim simpleshell.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shell-demo
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    env:
+    - name: ilike
+      valueFrom:
+        configMapKeyRef:
+          name: colors
+          key: favorite
+
+$ kubectl create -f simpleshell.yaml
+
+#验证效果，看到blue
+$ kubectl exec -ti shell-demo -- /bin/bash -c 'echo $ilike'
+
+#使用envFrom将configmap中的所有key-value放入环境变量中
+$ vim simpleshell.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shell-demo
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+#    env:
+#    - name: ilike
+#      valueFrom:
+#        configMapKeyRef:
+#          name: colors
+#          key: favorite
+    envFrom:
+    - configMapRef:
+        name: colors
+
+#下面命令可以看到configmap colors中的所有key-value
+$ kubectl exec -ti shell-demo -- /bin/bash -c 'env'
+$ kubectl delete pod shell-demo
+
+#使用yaml文件创建configmap
+$ vim car-map.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fast-car
+  namespace: default
+data:
+  car.make: Ford
+  car.model: Mustang
+  car.trim: Shelby
+
+$ kubectl get configmap fast-car -o yaml
+
+#将configmap做为卷，挂载到pod中
+$ vim simpleshell.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shell-demo
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    volumeMounts:
+    - name: car-vol
+      mountPath: /etc/cars
+  volumes:
+    - name: car-vol
+      configMap:
+        name: fast-car
+
+$ kubectl create -f simpleshell.yaml
+$ kubectl exec -ti shell-demo -- /bin/bash -c 'df -Th'
+$ kubectl exec -ti shell-demo -- /bin/bash -c 'cat /etc/cars/car.trim'
+#可以看到输出内容为Shelby，即  car.trim: Shelby 的Key-value对应关系
+
+$ kubectl delete pod shell-demo
+$ kubectl delete configmap fast-car colors
+
+----------------------------------------------------------------------------------------------------------------------------------
+
+
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 
