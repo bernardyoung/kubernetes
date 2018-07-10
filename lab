@@ -868,6 +868,10 @@ $ kubectl exec -ti nginx-nfs-7f7b7459b9-pvf9r -- /bin/bash -c 'cat /opt/hello.tx
 $ kubectl exec -ti nginx-nfs-7f7b7459b9-pvf9r -- /bin/bash -c 'df -Th'
 192.168.100.65:/opt/sfw        nfs4    41G  6.8G   32G  18% /opt
 
+$ kubectl delete deployment nginx-nfs
+$ kubectl delete pvc pvc-one
+$ kubectl delete pv pvvol-1
+
 #PV是持久化卷，需要定义卷的来源，例如NFS服务器地址和目录
 #PVC是持久化卷申请的声明或叫做请求
 #当只有一个PV和PVC时，在yaml文件中并未指明关系，PVC会自动使用PV的卷，PV会自动绑定到PVC
@@ -875,6 +879,133 @@ $ kubectl exec -ti nginx-nfs-7f7b7459b9-pvf9r -- /bin/bash -c 'df -Th'
 #使用PVC可以为用户隐藏起来PV的IP、目录等配置参数，简化用户操作。
 
 ----------------------------------------------------------------------------------------------------------------------------------
+
+Lab 9.4 使用 ResourceQuota 限制 PVC 数量和使用
+
+#创建资源配额yaml文件，限制在本namespace中pvc为10个，存储为500M
+$ vim storage-quota.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: storagequota
+spec:
+  hard:
+    persistentvolumeclaims: "10"
+    requests.storage: "500Mi"
+
+#创建namespace并查看详情，默认Quota和Limits都为空（No resource quota.  No resource limits.）
+$ kubectl create namespace small
+$ kubectl describe namespace small
+
+#使用9.2和9.3的yaml文件small名字空间中创建pv和pvc
+$ kubectl create -f PVol.yaml -n small
+$ kubectl create -f pvc.yaml -n small
+
+#使用yaml文件创建资源配额
+$ kubectl create -f storage-quota.yaml -n small
+
+#再次查看namespace的详情，Quota有内容了
+$ kubectl describe namespace small
+
+#在small中创建deployment并确保Mount:已经挂载
+$ kubectl create -f nfs-pod.yaml -n small
+$ kubectl get deployment -n small nginx-nfs
+$ kubectl describe deployment -n small nginx-nfs
+$ kubectl get pod -n small nginx-nfs-7f7b7459b9-l5znt
+$ kubectl describe pod -n small nginx-nfs-7f7b7459b9-l5znt
+$ kubectl describe namespace small
+
+#在NFS目录中创建一个300M的文件，查看配额限制无变化（NFS共享目录的大小不计入配额限制）
+$ sudo dd if=/dev/zero of=/opt/sfw/bigfile bs=1M count=300
+$ kubectl describe namespace small
+
+#Pod删除后配额没有变化
+$ kubectl get deployment -n small
+$ kubectl delete deployment -n small nginx-nfs
+$ kubectl describe namespace small
+
+#删除PVC后PV的状态变成了Released
+$ kubectl get pv -n small
+$ kubectl get pvc -n small
+$ kubectl delete pvc -n small pvc-one
+$ kubectl get pv -n small
+$ kubectl get pv -n small pvvol-1 -o yaml    #默认策略 persistentVolumeReclaimPolicy: Retain
+$ kubectl delete pv pvvol-1
+
+#上面部署把东西都删除了，重建PV并用patch修改Retain为Delete
+$ kubectl create -f PVol.yaml
+$ kubectl get pv -n small pvvol-1 -o yaml 
+$ kubectl patch pv -n small pvvol-1 -p '{"spec":{"persistentVolumeReclaimPolicy":"Delete"}}'
+$ kubectl get pv -n small    //清理策略变成了Delete
+$ kubectl describe namespace small    //当前的配额使用量为0，因为还没有PVC
+$ kubectl create  -f pvc.yaml -n small
+$ kubectl describe namespace small    //创建PVC后，使用变成了200M
+
+$ kubectl get resourcequota -n small
+$ kubectl delete resourcequota -n small storagequota    //删除配额配置
+$ vim storage-quota.yaml    //把配额限制改成100M
+$ kubectl create -f storage-quota.yaml -n small    //重新创建配额限制
+$ kubectl describe namespace small    //配额超过了硬限制
+$ kubectl create -f nfs-pod.yaml -n small    //重新创建Pod，没有报错。
+$ kubectl describe deployment -n small nginx-nfs
+$ kubectl get pod -n small    //pod确实在运行
+
+$ kubectl delete deployment -n small nginx-nfs
+$ kubectl delete pvc -n small pvc-one
+$ kubectl get pv -n small    //删除PVC后PV的状态变成了Failed（试图在删除，但是失败了）
+$ kubectl describe pv -n small pvvol-1    //这里可以看到因为缺少插件（ Error getting deleter volume plugin for volume "pvvol-1": no deletable volume plugin matched），NFS存在这种问题
+$ kubectl delete pv -n small pvvol-1    //手动删除一下。现在又全部删除了。
+
+$ kubectl create -f low-resource-range.yaml -n small    //创建CPU和内存限制
+$ kubectl describe namespace small
+$ vim PVol.yaml    //修改persistentVolumeReclaimPolicy: Recycle
+$ kubectl create -f PVol.yaml -n small    //重新创建PV
+$ kubectl get pv -n small    //PV的清理策略为Recycle
+$ kubectl create -f pvc.yaml -n small    //创建PVC发现报错（只有当Resource Limits生效时，Resource Quotas才会生效 ）
+$ kubectl edit resourcequota -n small    //编辑配额限制为500Mi
+$ kubectl create -f pvc.yaml -n small    //再次创建PVC成功
+$ kubectl create -f nfs-pod.yaml -n small
+$ kubectl delete deployment -n small nginx-nfs
+$ kubectl get pvc -n small
+$ kubectl get pv -n small
+$ kubectl delete pvc -n small pvc-one
+$ kubectl get pv -n small    //删除PVC后，PV的状态自动回收，变成Available
+$ kubectl delete pv -n small pvvol-1
+$ kubectl delete namespace small
+
+#PV和PVC介绍
+    PV：PersistentVolume 全局资源
+    PVC：PersistentVolumeClaim NameSpace资源
+
+PV的提供形式为两种：
+    Static：在集群里手动创建PV，供PVC使用
+    Dynamic：当集群里没有PV符合PVC请求时，集群里有StorageClass资源 ，且PVC里StorageClass资源的描述，PVC会自动通过StorageClass动态创建PV
+
+PV和PVC生命周期：
+    Binding：创建PVC时，PVController查找最合适的PV并建立绑定关系，一个PV只能绑定给一个PVC
+    Using：Pod把PVC当做Volume使用
+    Releasing：删除PVC后，PV状态变成Released，并准备被回收
+    Reclaiming：PV回收策略，有三种
+        Retained：PV保持原有数据并允许用户手动回收数据
+        Recycled：删除数据，并允许PV被绑定到其它PVC
+        Deleted：删除数据并删除PV
+
+PV的四状态:
+    Available：PV可以被使用
+    Bound：PV被绑定到了PVC
+    Released：被绑定的PVC被删除，可以被Reclaim
+    Failed：自动回收失败
+
+PVC的三种状：
+    Pending：等待可用的PV
+    Bound：PVC绑定了PV
+    Lost：找不到可绑定的PV
+
+PV三种访问模式：
+    ReadWriteOnce：单节点读写
+    ReadOnlyMany：多节点只读
+    ReadWriteMany：多节点读写
+
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
