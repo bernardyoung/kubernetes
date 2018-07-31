@@ -1007,6 +1007,67 @@ PV三种访问模式：
     ReadWriteMany：多节点读写
 
 ----------------------------------------------------------------------------------------------------------------------------------
+
+Lab 11.1 使用 Labels 分配Pods
+
+#先删除已有的deployment，获取每个node上的容器数量，然后继续
+#给两个节点找不同的标签，分别是vip和other
+$ kubectl describe node | grep -i label
+$ kubectl describe node | grep -i taint
+$ kubectl label node yqb-k8s-node1 status=vip
+$ kubectl label node yqb-k8s-node2 status=other
+$ kubectl get node --show-labels
+
+#Pod在有vip标签的主机上
+$ vim vip.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vip
+spec:
+  containers:
+  - name: vip1
+    image: busybox
+    args:
+    - sleep
+    - "1000000"
+  - name: vip2
+    image: busybox
+    args:
+    - sleep
+    - "1000000"
+  - name: vip3
+    image: busybox
+    args:
+    - sleep
+    - "1000000"
+  - name: vip4
+    image: busybox
+    args:
+    - sleep
+    - "1000000"
+  nodeSelector:
+    status: vip
+
+$ kubectl create -f vip.yaml
+$ kubectl  get pod -o wide
+
+#pod在另一台主机上
+$ kubectl delete pod vip
+$ vim vip.yaml
+#  nodeSelector:
+#    status: vip
+$ kubectl create -f vip.yaml
+$ kubectl  get pod -o wide
+
+#同样的方法部署other
+$ cp vip.yaml other.yaml
+$ sed  -i s/vip/other/g other.yaml
+$ kubectl create -f other.yaml
+$ kubectl get pod -o wide
+
+$ kubectl delete pod vip other
+
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
