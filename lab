@@ -1117,7 +1117,7 @@ $ kubectl taint node yqb-k8s-node2 bubba-
 
 #先部署然后设置taint为NoExecute
 #配置了taint的node上的所有容器将被迁移走
-#删除了taint后，节点运行所必需的容器迁移回原节点，用户部署的不一定迁
+#删除了taint后，节点运行所必需的容器迁移回原节点，用户部署的不主动迁
 $ kubectl apply -f taint.yaml
 $ kubectl  get pod -o wide
 $ kubectl taint node yqb-k8s-node2 bubba=value:NoExecute
