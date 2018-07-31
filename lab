@@ -1069,6 +1069,85 @@ $ kubectl get pod -o wide
 $ kubectl delete pod vip other
 
 ----------------------------------------------------------------------------------------------------------------------------------
+
+Lab 11.2 使用 Taints 控制 Pod 部署
+
+#默认部署应用分布在多个节点上
+$ vim taint.yaml
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: taint-deployment
+spec:
+  replicas: 8
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80
+
+$ kubectl apply -f taint.yaml
+$ kubectl get pod -o wide
+$ kubectl delete deployment taint-deployment
+
+#Tains有三种类型 NoSchedule、PreferNoSchedule 和 NoExecute
+#NoExecute可以使用正在运行的容器移动到其它节点上
+
+#第2个节点添加taint再次部署应用，这时第2节点上还是会有pod，但可能会比第1次部署时候少。
+$ kubectl taint node yqb-k8s-node2 bubba=value:PreferNoSchedule
+$ kubectl describe node | grep -i taint
+$ kubectl apply -f taint.yaml
+$ kubectl get pod -o wide
+
+$ kubectl delete deployment taint-deployment
+$ kubectl taint node yqb-k8s-node2 bubba-
+
+#在第2个节点上把taint设置成NoSchedule，第2个节点将没有Pod被部署
+$ kubectl taint node yqb-k8s-node2 bubba=value:NoSchedule
+$ kubectl apply -f taint.yaml
+$ kubectl get pod -o wide
+
+$ kubectl delete deployment taint-deployment
+$ kubectl taint node yqb-k8s-node2 bubba-
+
+#先部署然后设置taint为NoExecute
+#配置了taint的node上的所有容器将被迁移走
+#删除了taint后，节点运行所必需的容器迁移回原节点，用户部署的不一定迁
+$ kubectl apply -f taint.yaml
+$ kubectl  get pod -o wide
+$ kubectl taint node yqb-k8s-node2 bubba=value:NoExecute
+$ kubectl  get pod -o wide
+$ kubectl taint node yqb-k8s-node2 bubba-
+$ kubectl  get pod -o wide
+$ kubectl delete deployment taint-deployment
+
+$ kubectl apply -f taint.yaml
+$ kubectl  get pod -o wide
+$ kubectl delete deployment taint-deployment
+
+
+#将node2设置为drain状态，部署应用后node2上不会创建pod，但node2的基础容器会正常运行
+$ kubectl get node
+$ kubectl drain yqb-k8s-node2    //默认会有一个报错无影响
+$ kubectl get node
+$ kubectl apply -f taint.yaml
+$ kubectl get pod -o wide
+
+$ kubectl delete deployment taint-deployment
+
+#删除node2的drain状态，重新部署，一切恢复默认状态
+$ kubectl get node
+$ kubectl uncordon yqb-k8s-node2
+$ kubectl get node
+$ kubectl apply -f taint.yaml
+$ kubectl get pod -o wide
+$ kubectl delete deployment taint-deployment
+
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------------------------------------------------
