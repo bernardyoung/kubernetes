@@ -44,10 +44,8 @@ $ sudo -i
 # mkdir -p /etc/systemd/system/docker.service.d
 # cat /etc/systemd/system/docker.service.d/http-proxy.conf
 [Service]
-Environment="HTTP_PROXY=http://192.168.100.97:8123"
-# cat /etc/systemd/system/docker.service.d/https-proxy.conf
-[Service]
-Environment="HTTPS_PROXY=https://192.168.100.97:8123"
+Environment="HTTP_PROXY=http://42.62.51.51:8123"
+Environment="HTTPS_PROXY=http://42.62.51.51:8123"
 # systemctl daemon-reload
 # systemctl restart docker
 # docker info
